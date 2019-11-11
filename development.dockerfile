@@ -1,11 +1,6 @@
 #################################################
 FROM dschartman/miniconda_base as staging
 
-RUN apt update && \
-    apt install -y \
-        curl \
-        wget
-
 RUN curl -L "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)" -o docker-compose
 RUN chmod +x docker-compose
 
@@ -22,19 +17,26 @@ ENV PYTHONDONTWRITEBYTECODE true
 
 RUN apt update && \
     apt install -y \
-        wget \
         git \
         vim \
         ansible \
         sshpass \
         htop \
+        ssl-cert \
+        gnupg2 \
         && \
     apt clean
 
-ENV DOCKER_CLI_INSTALL_FILE docker-ce-cli_19.03.4~3-0~debian-buster_amd64.deb
-RUN wget https://download.docker.com/linux/debian/dists/buster/pool/stable/amd64/${DOCKER_CLI_INSTALL_FILE} && \
-    dpkg -i ${DOCKER_CLI_INSTALL_FILE} && \
-    rm ${DOCKER_CLI_INSTALL_FILE}
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
+    curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list
+
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \
+    echo "deb [arch=amd64] https://download.docker.com/linux/debian buster stable" > /etc/apt/sources.list.d/docker-ce.list
+
+RUN apt update && \
+    apt install -y docker-ce-cli && \
+    ACCEPT_EULA=Y apt install -y msodbcsql17 && \
+    apt clean
 
 COPY --from=staging docker-compose /usr/local/bin
 
@@ -51,3 +53,5 @@ COPY .gitconfig /root/.git
 RUN ln -s /root/.git/.gitconfig /root/.gitconfig
 
 WORKDIR /root
+
+ENTRYPOINT /bin/bash
