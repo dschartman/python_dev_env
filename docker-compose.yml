@@ -4,3 +4,11 @@ services:
     build:
       context: ./
       dockerfile: development.dockerfile
+    volumes:
+      - src:/root/src
+      - conda_envs:/opt/conda/envs
+      - git:/root/.git
+volumes:
+  src:
+  conda_envs:
+  git:
